@@ -38,9 +38,18 @@ val commonDeps = Seq(
 
 lazy val Ci = config("ci").extend(Test)
 
-ThisBuild / organization := "com.github.scullxbones"
+ThisBuild / organization := "com.vegafactor"
 ThisBuild / version      := releaseV
 ThisBuild / scalaVersion := scalaV
+
+ThisBuild / credentials += Credentials(Path.userHome / ".bintray" / ".credentials")
+
+ThisBuild / bintrayOmitLicense      := true
+ThisBuild / bintrayVcsUrl           := Some("https://github.com/VegaFactor/capella")
+ThisBuild / bintrayOrganization     := Some("vegafactor")
+ThisBuild / bintrayReleaseOnPublish := true
+ThisBuild / bintrayRepository       := "public-maven"
+ThisBuild / licenses := Seq("Apache-2.0" -> url("https://github.com/scullxbones/akka-persistence-mongo/blob/master/LICENSE"))
 
 val commonSettings = Seq(
   scalaVersion := scalaV,
@@ -53,7 +62,7 @@ val commonSettings = Seq(
     "org.mongodb" % "mongodb-driver-legacy" % MongoJavaDriverVersion
   ),
   version := releaseV,
-  organization := "com.github.scullxbones",
+  organization := "com.vegafactor",
   scalacOptions ++= Seq(
     "-unchecked",
     "-deprecation",
@@ -84,7 +93,7 @@ val commonSettings = Seq(
   testOptions in Test += Tests.Argument("-oDS"),
   testOptions in Ci += Tests.Argument("-l", "org.scalatest.tags.Slow"),
   fork in Test := false,
-  publishTo := sonatypePublishTo.value,
+//  publishTo := sonatypePublishTo.value,
   publishConfiguration := publishConfiguration.value.withOverwrite(true),
   publishLocalConfiguration := publishLocalConfiguration.value.withOverwrite(true)
 ) ++ inConfig(Ci)(Defaults.testTasks)
