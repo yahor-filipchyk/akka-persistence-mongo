@@ -1,9 +1,9 @@
-val releaseV = "3.0.2"
+val releaseV = "3.0.2-5"
 
 val scala212V = "2.12.11"
 val scala213V = "2.13.2"
 
-val scalaV = scala213V
+val scalaV = scala212V
 val akkaV = "2.6.4"
 
 val MongoJavaDriverVersion = "3.12.4"
@@ -38,9 +38,18 @@ val commonDeps = Seq(
 
 lazy val Travis = config("travis").extend(Test)
 
-ThisBuild / organization := "com.github.scullxbones"
+ThisBuild / organization := "com.vegafactor"
 ThisBuild / version      := releaseV
 ThisBuild / scalaVersion := scalaV
+
+ThisBuild / credentials += Credentials(Path.userHome / ".bintray" / ".credentials")
+
+ThisBuild / bintrayOmitLicense      := true
+ThisBuild / bintrayVcsUrl           := Some("https://github.com/VegaFactor/capella")
+ThisBuild / bintrayOrganization     := Some("vegafactor")
+ThisBuild / bintrayReleaseOnPublish := true
+ThisBuild / bintrayRepository       := "public-maven"
+ThisBuild / licenses := Seq("Apache-2.0" -> url("https://github.com/scullxbones/akka-persistence-mongo/blob/master/LICENSE"))
 
 val commonSettings = Seq(
   scalaVersion := scalaV,
@@ -53,7 +62,7 @@ val commonSettings = Seq(
     "org.mongodb" % "mongo-java-driver" % MongoJavaDriverVersion
   ),
   version := releaseV,
-  organization := "com.github.scullxbones",
+  organization := "com.vegafactor",
   scalacOptions ++= Seq(
     "-unchecked",
     "-deprecation",
@@ -84,7 +93,7 @@ val commonSettings = Seq(
   testOptions in Test += Tests.Argument("-oDS"),
   testOptions in Travis += Tests.Argument("-l", "org.scalatest.tags.Slow"),
   fork in Test := false,
-  publishTo := sonatypePublishTo.value,
+//  publishTo := sonatypePublishTo.value,
   publishConfiguration := publishConfiguration.value.withOverwrite(true),
   publishLocalConfiguration := publishLocalConfiguration.value.withOverwrite(true)
 ) ++ inConfig(Travis)(Defaults.testTasks)
