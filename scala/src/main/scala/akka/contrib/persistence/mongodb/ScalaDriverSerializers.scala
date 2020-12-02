@@ -106,7 +106,6 @@ class ScalaDriverSerializers(dynamicAccess: DynamicAccess, actorSystem: ActorSys
     override def serializeAtom(atom: Atom): BsonDocument = {
       Option(atom.tags).filter(_.nonEmpty).foldLeft(
         BsonDocument(
-          ID -> BsonObjectId(),
           PROCESSOR_ID -> atom.pid,
           FROM -> atom.from,
           TO -> atom.to,

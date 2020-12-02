@@ -16,7 +16,7 @@ import org.mongodb.scala.model.Filters._
 import org.mongodb.scala.model.Projections._
 import org.mongodb.scala.model.Sorts._
 import org.mongodb.scala.model.Updates._
-import org.mongodb.scala.model.{Accumulators, BulkWriteOptions, InsertOneModel, UpdateOptions}
+import org.mongodb.scala.model.{Accumulators, BulkWriteOptions, InsertOneModel, UpdateOneModel, UpdateOptions, WriteModel}
 import org.slf4j.{Logger, LoggerFactory}
 
 import scala.collection.JavaConverters._
@@ -33,6 +33,8 @@ class ScalaDriverPersistenceJournaller(val driver: ScalaMongoDriver) extends Mon
   protected val logger: Logger = LoggerFactory.getLogger(getClass)
 
   private[this] val writeConcern = driver.journalWriteConcern
+
+  private[this] val upsert = UpdateOptions().upsert(true)
 
   private[this] def journal: Future[driver.C] = driver.journal.map(_.withWriteConcern(driver.journalWriteConcern))
 
@@ -77,14 +79,49 @@ class ScalaDriverPersistenceJournaller(val driver: ScalaMongoDriver) extends Mon
 
   private[this] def doBatchAppend(batch: Seq[Try[BsonDocument]], collection: Future[driver.C]): Future[Seq[Try[BsonDocument]]] = {
     if (batch.forall(_.isSuccess)) {
-      val collected: Seq[InsertOneModel[driver.D]] = batch.collect { case Success(doc) => InsertOneModel(doc) }
+      val collected: Seq[WriteModel[driver.D]] =
+        batch.collect { case Success(doc) =>
+          if (doc.containsKey(ID)) InsertOneModel(doc)
+          else {
+            val filter = and(
+              equal(PROCESSOR_ID, doc.get(PROCESSOR_ID)),
+              gte(FROM, doc.get(FROM)),
+              lte(TO, doc.get(TO))
+            )
+            val update = BsonDocument("$set" -> doc)
+            new UpdateOneModel[driver.D](filter, update, upsert)
+          }
+        }
       collection.flatMap(_.withWriteConcern(writeConcern).bulkWrite(collected, new BulkWriteOptions().ordered(true))
         .toFuture()
-        .map(_ => batch))
+        .map(_.getUpserts.asScala.map(_.getId).toList)
+        .map(ids => {
+          if (ids.nonEmpty) ids.zip(batch).map { case (id, doc) => doc.map(_.append(ID, id)) }
+          else batch
+        }))
     } else {
       Future.sequence(batch.map {
         case Success(document: BsonDocument) =>
-          collection.flatMap(_.withWriteConcern(writeConcern).insertOne(document).toFuture().map(_ => Success(document)))
+          if (document.containsKey(ID)) {
+            collection.flatMap(_.withWriteConcern(writeConcern).insertOne(document)
+              .toFuture()
+              .map(_ => Success(document)))
+          }
+          else {
+            val filter = and(
+              equal(PROCESSOR_ID, document.get(PROCESSOR_ID)),
+              gte(FROM, document.get(FROM)),
+              lte(TO, document.get(TO))
+            )
+            val update = BsonDocument("$set" -> document)
+            collection.flatMap(_.withWriteConcern(writeConcern).updateOne(filter, update, upsert)
+              .toFuture()
+              .map(r => Option(r.getUpsertedId))
+              .map(id => {
+                val withId = id.foldLeft(document) { case (doc, id) => doc.append(ID, id) }
+                Success(withId)
+              }))
+          }
         case f: Failure[_] =>
           Future.successful(Failure[BsonDocument](f.exception))
       })
