@@ -286,9 +286,15 @@ class ScalaDriverPersistenceReadJournaller(driver: ScalaMongoDriver) extends Mon
       Option(equal(PROCESSOR_ID, persistenceId))
     ).mapConcat{ case(ev,_) => List(ev).filter(_.pid == persistenceId) }
 
-  override def liveEventsByTag(tag: String, offset: Offset)(implicit m: Materializer, ec: ExecutionContext, ord: Ordering[Offset]): Source[(Event, Offset), NotUsed] =
+  override def liveEventsByTag(tag: String, offset: Offset)(implicit m: Materializer, ec: ExecutionContext, ord: Ordering[Offset]): Source[(Event, Offset), NotUsed] = {
+    val query = offset match {
+      case ObjectIdOffset(hexStr, _) if checkOffsetIsSupported(offset) =>
+        and(equal(TAGS, tag), gte(ID, BsonObjectId(hexStr)))
+      case _ => equal(TAGS, tag)
+    }
     journalStream.cursor(
-      Option(equal(TAGS, tag))
-    ).filter{ case(ev, off) => ev.tags.contains(tag) &&  ord.gt(off, offset)}
+      Option(query)
+    ).filter{ case(ev, off) => ev.tags.contains(tag) && ord.gt(off, offset)}
+  }
 
 }
