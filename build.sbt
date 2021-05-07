@@ -6,7 +6,7 @@ val scala213V = "2.13.4"
 val scalaV = scala213V
 val akkaV = "2.6.10"
 
-val MongoJavaDriverVersion = "4.1.0"
+val MongoJavaDriverVersion = "4.2.3"
 
 val commonDeps = Seq(
   ("com.typesafe.akka"  %% "akka-persistence" % akkaV)
@@ -107,16 +107,16 @@ lazy val `akka-persistence-mongo-scala` = (project in file("scala"))
   .settings(commonSettings:_*)
   .settings(
     libraryDependencies ++= Seq(
-      "org.mongodb.scala" %% "mongo-scala-driver" % "4.1.1"        % "compile",
-      "org.mongodb.scala" %% "mongo-scala-bson"   % "4.1.1"        % "compile",
-      "org.mongodb"       % "mongodb-driver-core" % "4.1.1"        % "compile",
+      "org.mongodb.scala" %% "mongo-scala-driver" % MongoJavaDriverVersion % "compile",
+      "org.mongodb.scala" %% "mongo-scala-bson"   % MongoJavaDriverVersion % "compile",
+      "org.mongodb"       % "mongodb-driver-core" % MongoJavaDriverVersion % "compile",
       "io.netty"          % "netty-buffer"        % "4.1.56.Final" % "compile",
       "io.netty"          % "netty-transport"     % "4.1.56.Final" % "compile",
       "io.netty"          % "netty-handler"       % "4.1.56.Final" % "compile",
       "org.reactivestreams" % "reactive-streams"  % "1.0.3"
     ),
     dependencyOverrides ++= Seq(
-      "org.mongodb"       % "mongodb-driver-core" % "4.1.1"        % "compile"
+      "org.mongodb"       % "mongodb-driver-core" % MongoJavaDriverVersion % "compile"
     )
   )
   .configs(Travis)
@@ -141,7 +141,7 @@ lazy val `akka-persistence-mongo-tools` = (project in file("tools"))
   .settings(commonSettings:_*)
   .settings(
     libraryDependencies ++= Seq(
-      "org.mongodb.scala" %% "mongo-scala-driver" % "2.7.0" % "compile"
+      "org.mongodb.scala" %% "mongo-scala-driver" % MongoJavaDriverVersion % "compile"
     )
   )
   .configs(Travis)
