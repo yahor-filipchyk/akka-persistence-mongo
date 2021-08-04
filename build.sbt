@@ -42,14 +42,9 @@ ThisBuild / organization := "com.vegafactor"
 ThisBuild / version      := releaseV
 ThisBuild / scalaVersion := scalaV
 
-ThisBuild / credentials += Credentials(Path.userHome / ".bintray" / ".credentials")
-
-ThisBuild / bintrayOmitLicense      := true
-ThisBuild / bintrayVcsUrl           := Some("https://github.com/VegaFactor/capella")
-ThisBuild / bintrayOrganization     := Some("vegafactor")
-ThisBuild / bintrayReleaseOnPublish := true
-ThisBuild / bintrayRepository       := "public-maven"
-ThisBuild / licenses := Seq("Apache-2.0" -> url("https://github.com/scullxbones/akka-persistence-mongo/blob/master/LICENSE"))
+ThisBuild / githubOwner       := "VegaFactor"
+ThisBuild / githubRepository  := "akka-persistence-mongo"
+ThisBuild / githubTokenSource := TokenSource.Environment("GITHUB_TOKEN") || TokenSource.GitConfig("github.token")
 
 val commonSettings = Seq(
   scalaVersion := scalaV,
@@ -87,7 +82,8 @@ val commonSettings = Seq(
   resolvers ++= Seq(
     "Typesafe Releases" at "https://repo.typesafe.com/typesafe/releases/",
     "Typesafe Snapshots" at "https://repo.typesafe.com/typesafe/snapshots/",
-    "Sonatype OSS Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots"
+    "Sonatype OSS Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots",
+    Resolver.githubPackages("VegaFactor")
   ),
   parallelExecution in Test := false,
   testOptions in Test += Tests.Argument("-oDS"),
@@ -95,7 +91,10 @@ val commonSettings = Seq(
   fork in Test := false,
 //  publishTo := sonatypePublishTo.value,
   publishConfiguration := publishConfiguration.value.withOverwrite(true),
-  publishLocalConfiguration := publishLocalConfiguration.value.withOverwrite(true)
+  publishLocalConfiguration := publishLocalConfiguration.value.withOverwrite(true),
+  githubOwner       := "VegaFactor",
+  githubRepository  := "akka-persistence-mongo",
+  githubTokenSource := TokenSource.Environment("GITHUB_TOKEN") || TokenSource.GitConfig("github.token")
 ) ++ inConfig(Ci)(Defaults.testTasks)
 
 lazy val `akka-persistence-mongo-common` = (project in file("common"))
@@ -150,5 +149,8 @@ lazy val `akka-persistence-mongo` = (project in file("."))
   .settings(
     crossScalaVersions := Nil,
     skip in publish := true,
-    publishTo := Some(Resolver.file("file", new File("target/unusedrepo")))
+//    publishTo := Some(Resolver.file("file", new File("target/unusedrepo"))),
+    githubOwner       := "VegaFactor",
+    githubRepository  := "akka-persistence-mongo",
+    githubTokenSource := TokenSource.Environment("GITHUB_TOKEN") || TokenSource.GitConfig("github.token")
   )
