@@ -1,12 +1,12 @@
-val releaseV = "3.0.8"
+val releaseV = "3.0.8-1"
 
 val scala212V = "2.12.15"
-val scala213V = "2.13.7"
+val scala213V = "2.13.8"
 
 val scalaV = scala213V
 val akkaV = "2.6.17"
 
-val MongoJavaDriverVersion = "4.3.4"
+val MongoJavaDriverVersion = "4.5.1"
 
 val commonDeps = Seq(
   ("com.typesafe.akka"  %% "akka-persistence" % akkaV)
@@ -44,7 +44,7 @@ ThisBuild / scalaVersion := scalaV
 
 ThisBuild / githubOwner       := "VegaFactor"
 ThisBuild / githubRepository  := "akka-persistence-mongo"
-ThisBuild / githubTokenSource := TokenSource.Environment("GITHUB_TOKEN") || TokenSource.GitConfig("github.token")
+ThisBuild / githubTokenSource := TokenSource.GitConfig("github.token") || TokenSource.Environment("GITHUB_TOKEN")
 
 val commonSettings = Seq(
   scalaVersion := scalaV,
@@ -94,7 +94,7 @@ val commonSettings = Seq(
   publishLocalConfiguration := publishLocalConfiguration.value.withOverwrite(true),
   githubOwner       := "VegaFactor",
   githubRepository  := "akka-persistence-mongo",
-  githubTokenSource := TokenSource.Environment("GITHUB_TOKEN") || TokenSource.GitConfig("github.token")
+  githubTokenSource := TokenSource.GitConfig("github.token") || TokenSource.Environment("GITHUB_TOKEN")
 ) ++ inConfig(Ci)(Defaults.testTasks)
 
 lazy val `akka-persistence-mongo-common` = (project in file("common"))
@@ -152,5 +152,5 @@ lazy val `akka-persistence-mongo` = (project in file("."))
 //    publishTo := Some(Resolver.file("file", new File("target/unusedrepo"))),
     githubOwner       := "VegaFactor",
     githubRepository  := "akka-persistence-mongo",
-    githubTokenSource := TokenSource.Environment("GITHUB_TOKEN") || TokenSource.GitConfig("github.token")
+    githubTokenSource := TokenSource.GitConfig("github.token") || TokenSource.Environment("GITHUB_TOKEN")
   )
