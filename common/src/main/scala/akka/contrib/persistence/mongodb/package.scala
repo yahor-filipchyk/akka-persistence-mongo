@@ -32,6 +32,9 @@ package object mongodb {
   implicit class OffsetWithObjectIdToo(val offsets: Offset.type) extends AnyVal {
     def objectId(hexStr: String, time: Long): ObjectIdOffset =
       ObjectIdOffset(hexStr, time)
+
+    def objectId(hexStr: String, time: Long, eventSeqN: Long): ObjectIdSingleEventOffset =
+      ObjectIdSingleEventOffset(hexStr, time, eventSeqN)
   }
 
   implicit object OffsetOrdering extends Ordering[Offset] {
@@ -49,6 +52,9 @@ package object mongodb {
         case (a:ObjectIdOffset, b:ObjectIdOffset) => a compareTo b
         case (_:ObjectIdOffset, _)                => 0 // Can't compare
         case (_, _:ObjectIdOffset)                => 0 // Can't compare
+        case (a:ObjectIdSingleEventOffset, b:ObjectIdSingleEventOffset) => a compareTo b
+        case (_:ObjectIdSingleEventOffset, _)     => 0 // Can't compare
+        case (_, _:ObjectIdSingleEventOffset)     => 0 // Can't compare
         case _                                    =>
           // Per j.u.Comparator contract
           throw new ClassCastException(s"Unsupported offset types ${x.getClass.getName} ${y.getClass.getName}")

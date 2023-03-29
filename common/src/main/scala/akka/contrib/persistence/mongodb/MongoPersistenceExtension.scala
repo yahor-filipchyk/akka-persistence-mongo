@@ -128,4 +128,6 @@ class MongoSettings(val config: Config) {
   val MongoMetricsBuilderClass: String = config.getString("metrics-builder.class")
 
   val CollectionCache: Config = config.getConfig("collection-cache")
+
+  val OffsetType: String = config.getString("offset-type")
 }

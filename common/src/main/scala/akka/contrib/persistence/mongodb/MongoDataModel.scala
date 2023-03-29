@@ -35,6 +35,26 @@ case class ObjectIdOffset(hexStr: String, time: Long) extends Offset with Ordere
   }
 }
 
+case class ObjectIdSingleEventOffset(
+    hexStr:    String,
+    time:      Long,
+    eventSeqN: Long
+) extends Offset with Ordered[ObjectIdSingleEventOffset] {
+  override def compare(that: ObjectIdSingleEventOffset): Int = {
+    time compare that.time match {
+      case cmp if cmp != 0 =>
+        cmp
+      case _ =>
+        hexStr compare that.hexStr match {
+          case cmp if cmp != 0 =>
+            cmp
+          case _ =>
+            eventSeqN compare that.eventSeqN
+        }
+    }
+  }
+}
+
 case class Bson[D: DocumentType](content: D, tags: Set[String]) extends Payload {
   type Content = D
   val hint = "bson"

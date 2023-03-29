@@ -85,15 +85,23 @@ object CurrentEventsByPersistenceId {
 }
 
 object CurrentEventsByTag {
-  def source(driver: ScalaMongoDriver, tag: String, fromOffset: Offset): Source[(Event, Offset), NotUsed] = {
+  def source(
+      driver:       ScalaMongoDriver,
+      tag:          String,
+      fromOffset:   Offset,
+  ): Source[(Event, Offset), NotUsed] = {
     import driver.ScalaSerializers._
 
-    val offset = fromOffset match {
-      case NoOffset => None
-      case ObjectIdOffset(hexStr, _) => Try(BsonObjectId(new ObjectId(hexStr))).toOption
+    val offset: Seq[conversions.Bson] = fromOffset match {
+      case NoOffset => Seq.empty
+      case ObjectIdOffset(hexStr, _) =>
+        Try(BsonObjectId(new ObjectId(hexStr))).toOption.map(gt(ID, _)).toSeq
+      case ObjectIdSingleEventOffset(hexStr, _, _) =>
+        // Include the document with the given offset. The events will be further filtered by sequence number
+        Try(BsonObjectId(new ObjectId(hexStr))).toOption.map(gte(ID, _)).toSeq
     }
     val query = and(
-      equal(TAGS, tag) :: Nil ++ offset.map(gt(ID, _)) : _*
+      equal(TAGS, tag) :: Nil ++ offset : _*
     )
 
     Source
@@ -108,9 +116,18 @@ object CurrentEventsByTag {
         Option(doc.get(EVENTS)).filter(_.isArray).map(_.asArray)
           .map(_.getValues
                 .asScala
-                .collect{
-                  case d:BsonDocument =>
-                    driver.deserializeJournal(d) -> ObjectIdOffset(id.toHexString, id.getDate.getTime)
+                .collect {
+                  case d: BsonDocument =>
+                    val deserialized = driver.deserializeJournal(d)
+                    deserialized -> driver.createOffset(id.toHexString, id.getDate.getTime, deserialized)
+                }
+                .dropWhile {
+                  case (_, eOffset: ObjectIdSingleEventOffset) =>
+                    fromOffset match {
+                      case ObjectIdSingleEventOffset(_, _, seq) => eOffset.eventSeqN >= seq
+                      case _ => false
+                    }
+                  case _ => false
                 }
                 .filter{
                   case (ev,_) => ev.tags.contains(tag)
@@ -240,7 +257,8 @@ class ScalaDriverJournalStream(driver: ScalaMongoDriver) extends JournalStream[S
             val id = d.getObjectId(ID).getValue
             Option(d.get(EVENTS)).filter(_.isArray).map(_.asArray).map(_.getValues.asScala.collect {
               case d: BsonDocument =>
-                driver.deserializeJournal(d) -> ObjectIdOffset(id.toHexString, id.getDate.getTime)
+                val event = driver.deserializeJournal(d)
+                event -> driver.createOffset(id.toHexString, id.getDate.getTime, event)
             }.toList).getOrElse(Nil)
           }
         }
@@ -273,6 +291,7 @@ class ScalaDriverPersistenceReadJournaller(driver: ScalaMongoDriver) extends Mon
     PartialFunction.cond(offset){
       case NoOffset => true
       case ObjectIdOffset(hexStr, _) => ObjectId.isValid(hexStr)
+      case ObjectIdSingleEventOffset(hexStr, _, _) => ObjectId.isValid(hexStr)
     }
 
   override def liveEvents(implicit m: Materializer, ec: ExecutionContext): Source[Event, NotUsed] =
@@ -289,6 +308,8 @@ class ScalaDriverPersistenceReadJournaller(driver: ScalaMongoDriver) extends Mon
   override def liveEventsByTag(tag: String, offset: Offset)(implicit m: Materializer, ec: ExecutionContext, ord: Ordering[Offset]): Source[(Event, Offset), NotUsed] = {
     val query = offset match {
       case ObjectIdOffset(hexStr, _) if checkOffsetIsSupported(offset) =>
+        and(equal(TAGS, tag), gte(ID, BsonObjectId(hexStr)))
+      case ObjectIdSingleEventOffset(hexStr, _, _) if checkOffsetIsSupported(offset) =>
         and(equal(TAGS, tag), gte(ID, BsonObjectId(hexStr)))
       case _ => equal(TAGS, tag)
     }

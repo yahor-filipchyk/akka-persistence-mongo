@@ -14,12 +14,14 @@ import akka.actor.ActorSystem
 import akka.contrib.persistence.mongodb.JournallingFieldNames._
 import akka.contrib.persistence.mongodb.SnapshottingFieldNames._
 import akka.stream.Materializer
+
 import com.typesafe.config.Config
 import org.slf4j.{Logger, LoggerFactory}
-
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 import scala.util.{Failure, Success, Try}
+
+import akka.persistence.query.Offset
 
 object MongoPersistenceDriver {
 
@@ -93,6 +95,16 @@ abstract class MongoPersistenceDriver(as: ActorSystem, config: Config)
   as.registerOnTermination {
     closeConnections()
   }
+
+  private val offsetCreator: (String, Long, Event) => Offset =
+    (id, time, event) => settings.OffsetType match {
+      case "document-id"        => ObjectIdOffset(id, time)
+      case "document-id-and-sn" => ObjectIdSingleEventOffset(id, time, event.sn)
+      case other                => throw new IllegalArgumentException(s"Unknown offset type: $other")
+    }
+
+  def createOffset(hexStr: String, time: Long, event: Event): Offset =
+    offsetCreator(hexStr, time, event)
 
   def collection(name: String): Future[C]
 
