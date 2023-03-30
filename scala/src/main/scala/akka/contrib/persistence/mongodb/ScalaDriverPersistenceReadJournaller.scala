@@ -89,7 +89,7 @@ object CurrentEventsByTag {
       driver:       ScalaMongoDriver,
       tag:          String,
       fromOffset:   Offset,
-  ): Source[(Event, Offset), NotUsed] = {
+  )(implicit ord: Ordering[Offset]): Source[(Event, Offset), NotUsed] = {
     import driver.ScalaSerializers._
 
     val offset: Seq[conversions.Bson] = fromOffset match {
@@ -122,19 +122,10 @@ object CurrentEventsByTag {
                     deserialized -> driver.createOffset(id.toHexString, id.getDate.getTime, deserialized)
                 }
                 .filter{
-                  case (ev,_) => ev.tags.contains(tag)
+                  case (ev, off) => ev.tags.contains(tag) && ord.gt(off, fromOffset)
                 })
           .getOrElse(Nil)
       }.mapConcat(_.toList)
-      .dropWhile {
-        case (_, eOffset: ObjectIdSingleEventOffset) =>
-          fromOffset match {
-            case ObjectIdSingleEventOffset(_, _, seq) => eOffset.eventSeqN != seq
-            case _ => false
-          }
-        case _ => false
-      }
-      .drop(1)
   }
 }
 
@@ -339,7 +330,7 @@ class ScalaDriverPersistenceReadJournaller(driver: ScalaMongoDriver) extends Mon
           case _ => false
         }
       case _ => false
-    }.drop(1).filter{ case(ev, off) => ev.tags.contains(tag) && ord.gt(off, offset)}
+    }.filter{ case(ev, off) => ev.tags.contains(tag) && ord.gt(off, offset)}
   }
 
 }
