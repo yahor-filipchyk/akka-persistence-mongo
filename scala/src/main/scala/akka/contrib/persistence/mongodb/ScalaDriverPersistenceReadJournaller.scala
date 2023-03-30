@@ -121,19 +121,19 @@ object CurrentEventsByTag {
                     val deserialized = driver.deserializeJournal(d)
                     deserialized -> driver.createOffset(id.toHexString, id.getDate.getTime, deserialized)
                 }
-                .dropWhile {
-                  case (_, eOffset: ObjectIdSingleEventOffset) =>
-                    fromOffset match {
-                      case ObjectIdSingleEventOffset(_, _, seq) => eOffset.eventSeqN <= seq
-                      case _ => false
-                    }
-                  case _ => false
-                }
                 .filter{
                   case (ev,_) => ev.tags.contains(tag)
                 })
           .getOrElse(Nil)
       }.mapConcat(_.toList)
+      .dropWhile {
+        case (_, eOffset: ObjectIdSingleEventOffset) =>
+          fromOffset match {
+            case ObjectIdSingleEventOffset(_, _, seq) => eOffset.eventSeqN <= seq
+            case _ => false
+          }
+        case _ => false
+      }
   }
 }
 
