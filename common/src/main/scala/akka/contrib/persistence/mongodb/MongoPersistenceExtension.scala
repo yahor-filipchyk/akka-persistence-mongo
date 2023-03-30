@@ -7,13 +7,14 @@
 package akka.contrib.persistence.mongodb
 
 
+import java.time
 import java.util.concurrent.ConcurrentHashMap
 
 import akka.actor._
 import akka.stream.Materializer
+
 import com.codahale.metrics.MetricRegistry
 import com.typesafe.config.{Config, ConfigFactory}
-
 import scala.collection.JavaConverters._
 import scala.concurrent.duration._
 import scala.util.Try
@@ -107,6 +108,9 @@ class MongoSettings(val config: Config) {
   val realtimeEnablePersistence: Boolean = config.getBoolean("realtime-enable-persistence")
   val realtimeCollectionName: String = config.getString("realtime-collection")
   val realtimeCollectionSize: Long = config.getLong("realtime-collection-size")
+
+  val RealtimeCollectionBufferWithin: time.Duration = config.getDuration("realtime-collection-buffer-within")
+  val RealtimeCollectionMaxBufferSize: Int = config.getInt("realtime-collection-buffer-size")
 
   val MetadataCollection: String = config.getString("metadata-collection")
 

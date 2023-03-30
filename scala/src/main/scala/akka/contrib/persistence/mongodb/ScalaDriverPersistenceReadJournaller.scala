@@ -236,6 +236,21 @@ class ScalaDriverJournalStream(driver: ScalaMongoDriver) extends JournalStream[S
     _.cursorType(CursorType.TailableAwait)
      .maxAwaitTime(30.seconds)
 
+  private val maybeReorder: Flow[BsonDocument, BsonDocument, NotUsed] = {
+    val bufferingEnabled = driver.settings.RealtimeCollectionMaxBufferSize > 0 &&
+      driver.settings.RealtimeCollectionBufferWithin.toMillis > 0
+
+    if (bufferingEnabled) {
+      Flow[BsonDocument]
+        .groupedWithin(
+          driver.settings.RealtimeCollectionMaxBufferSize,
+          driver.settings.RealtimeCollectionBufferWithin.toMillis.millis
+        )
+        .mapConcat(_.sortBy(_.getObjectId("_id")))
+    }
+    else Flow[BsonDocument]
+  }
+
   def cursor(query: Option[conversions.Bson]): Source[(Event, Offset),NotUsed] = {
     if (driver.realtimeEnablePersistence)
       Source.future(driver.realtime)
@@ -254,6 +269,7 @@ class ScalaDriverJournalStream(driver: ScalaMongoDriver) extends JournalStream[S
               }
           }).named("rt-graph-stage").async)
           .via(killSwitch.flow)
+          .via(maybeReorder)
           .mapConcat[(Event, Offset)] { d =>
             val id = d.getObjectId(ID).getValue
             Option(d.get(EVENTS)).filter(_.isArray).map(_.asArray).map(_.getValues.asScala.collect {
