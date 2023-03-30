@@ -10,10 +10,11 @@ import akka.stream.javadsl.{Source => JSource}
 import akka.stream.scaladsl._
 import akka.stream.stage._
 import akka.stream.{javadsl => _, scaladsl => _, _}
-import com.typesafe.config.Config
 
+import com.typesafe.config.Config
 import scala.collection.mutable
 import scala.concurrent.ExecutionContext
+import scala.concurrent.Promise
 
 object MongoReadJournal {
   val Identifier = "akka-contrib-mongodb-persistence-readjournal"
@@ -124,10 +125,19 @@ class ScalaDslMongoReadJournal(impl: MongoPersistenceReadJournallingApi)(implici
     val pastSource =
       impl.currentEventsByTag(tag, offset)
         .toEventEnvelopes
-    val realtimeSource =
-      impl.liveEventsByTag(tag, offset)
-        .toEventEnvelopes
-    (pastSource ++ realtimeSource).via(new RemoveDuplicatedEventEnvelopes)
+
+    val lastEventInJournal = Promise[Option[EventEnvelope]]()
+
+    val realtimeSource = Source
+      .future(lastEventInJournal.future.map(_.map(_.offset).getOrElse(offset))) // offset
+      .flatMapConcat(offset => impl.liveEventsByTag(tag, offset).toEventEnvelopes)
+
+    pastSource
+      .alsoTo {
+        Sink.lastOption[EventEnvelope].mapMaterializedValue(lastEventInJournal.completeWith)
+      }
+      .concat(realtimeSource)
+      .via(new RemoveDuplicatedEventEnvelopes)
   }
 }
 
