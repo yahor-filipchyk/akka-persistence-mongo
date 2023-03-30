@@ -124,7 +124,7 @@ object CurrentEventsByTag {
                 .dropWhile {
                   case (_, eOffset: ObjectIdSingleEventOffset) =>
                     fromOffset match {
-                      case ObjectIdSingleEventOffset(_, _, seq) => eOffset.eventSeqN >= seq
+                      case ObjectIdSingleEventOffset(_, _, seq) => eOffset.eventSeqN <= seq
                       case _ => false
                     }
                   case _ => false
@@ -315,7 +315,14 @@ class ScalaDriverPersistenceReadJournaller(driver: ScalaMongoDriver) extends Mon
     }
     journalStream.cursor(
       Option(query)
-    ).filter{ case(ev, off) => ev.tags.contains(tag) && ord.gt(off, offset)}
+    ).dropWhile {
+      case (_, eOffset: ObjectIdSingleEventOffset) =>
+        offset match {
+          case ObjectIdSingleEventOffset(_, _, seq) => eOffset.eventSeqN <= seq
+          case _ => false
+        }
+      case _ => false
+    }.filter{ case(ev, off) => ev.tags.contains(tag) && ord.gt(off, offset)}
   }
 
 }
