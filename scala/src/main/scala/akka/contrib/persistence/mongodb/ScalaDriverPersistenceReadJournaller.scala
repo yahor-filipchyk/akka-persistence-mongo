@@ -323,14 +323,7 @@ class ScalaDriverPersistenceReadJournaller(driver: ScalaMongoDriver) extends Mon
     }
     journalStream.cursor(
       Option(query)
-    ).dropWhile {
-      case (_, eOffset: ObjectIdSingleEventOffset) =>
-        offset match {
-          case ObjectIdSingleEventOffset(_, _, seq) => eOffset.eventSeqN != seq
-          case _ => false
-        }
-      case _ => false
-    }.filter{ case(ev, off) => ev.tags.contains(tag) && ord.gt(off, offset)}
+    ).filter{ case(ev, off) => ev.tags.contains(tag) && ord.gt(off, offset)}
   }
 
 }
