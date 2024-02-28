@@ -96,9 +96,17 @@ object CurrentEventsByTag {
       case NoOffset => Seq.empty
       case ObjectIdOffset(hexStr, _) =>
         Try(BsonObjectId(new ObjectId(hexStr))).toOption.map(gt(ID, _)).toSeq
-      case ObjectIdSingleEventOffset(hexStr, _, _) =>
+      case ObjectIdSingleEventOffset(hexStr, _, seqN) =>
         // Include the document with the given offset. The events will be further filtered by sequence number
-        Try(BsonObjectId(new ObjectId(hexStr))).toOption.map(gte(ID, _)).toSeq
+        Try(BsonObjectId(new ObjectId(hexStr)))
+          .toOption
+          .map { id =>
+            or(
+              and(equal(ID, id), gt(TO, seqN)),
+              gt(ID, id)
+            )
+          }
+          .toSeq
     }
     val query = and(
       equal(TAGS, tag) :: Nil ++ offset : _*
