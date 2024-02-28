@@ -1,18 +1,21 @@
+publish / skip := true
 val releaseV = "3.0.8-8"
 
-val scala212V = "2.12.15"
-val scala213V = "2.13.8"
+val scala212V = "2.12.18"
+val scala213V = "2.13.12"
 
 val scalaV = scala213V
-val akkaV = "2.6.17"
+val akkaV = "2.6.20"
 
-val MongoJavaDriverVersion = "4.5.1"
+val MongoJavaDriverVersion = "4.11.0"
+val Log4JVersion = "2.21.0"
+val NettyVersion = "4.1.100.Final"
 
 val commonDeps = Seq(
   ("com.typesafe.akka"  %% "akka-persistence" % akkaV)
     .exclude("org.iq80.leveldb", "leveldb")
     .exclude("org.fusesource.leveldbjni", "leveldbjni-all"),
-  ("nl.grons" %% "metrics4-akka_a25" % "4.1.19")
+  ("nl.grons" %% "metrics4-akka_a25" % "4.2.9")
     .exclude("com.typesafe.akka", "akka-actor_2.11")
     .exclude("com.typesafe.akka", "akka-actor_2.12")
     .exclude("com.typesafe.akka", "akka-actor_2.13"),
@@ -21,13 +24,13 @@ val commonDeps = Seq(
   "com.typesafe.akka"         %% "akka-actor"               % akkaV     % "compile",
   "org.mongodb"               % "mongodb-driver-core"       % MongoJavaDriverVersion   % "compile",
   "org.mongodb"               % "mongodb-driver-legacy"     % MongoJavaDriverVersion   % "test",
-  "org.slf4j"                 % "slf4j-api"                 % "1.7.32"  % "test",
-  "org.apache.logging.log4j"  % "log4j-api"                 % "2.17.0"  % "test",
-  "org.apache.logging.log4j"  % "log4j-core"                % "2.17.0"  % "test",
-  "org.apache.logging.log4j"  % "log4j-slf4j-impl"          % "2.17.0"  % "test",
-  "org.scalatest"             %% "scalatest"                % "3.2.10"   % "test",
+  "org.slf4j"                 % "slf4j-api"                 % "2.0.9"  % "test",
+  "org.apache.logging.log4j"  % "log4j-api"                 % Log4JVersion  % "test",
+  "org.apache.logging.log4j"  % "log4j-core"                % Log4JVersion  % "test",
+  "org.apache.logging.log4j"  % "log4j-slf4j-impl"          % Log4JVersion  % "test",
+  "org.scalatest"             %% "scalatest"                % "3.2.17"   % "test",
   "org.scalatestplus"         %% "mockito-1-10"             % "3.1.0.0" % "test",
-  "org.scalatestplus"         %% "junit-4-12"               % "3.2.2.0" % "test",
+  "org.scalatestplus"         %% "junit-4-13"               % "3.2.17.0" % "test",
   "junit"                     % "junit"                     % "4.13.2"    % "test",
   "org.mockito"               % "mockito-all"               % "1.10.19" % "test",
   "com.typesafe.akka"         %% "akka-slf4j"               % akkaV     % "test",
@@ -39,8 +42,8 @@ val commonDeps = Seq(
 lazy val Ci = config("ci").extend(Test)
 
 ThisBuild / organization := "com.vegafactor"
-ThisBuild / version      := releaseV
 ThisBuild / scalaVersion := scalaV
+ThisBuild / versionScheme := Some("semver-spec")
 
 ThisBuild / githubOwner       := "VegaFactor"
 ThisBuild / githubRepository  := "akka-persistence-mongo"
@@ -52,7 +55,7 @@ val commonSettings = Seq(
   libraryDependencies ++= commonDeps,
   dependencyOverrides ++= Seq(
     "com.typesafe" % "config" % "1.3.2",
-    "org.slf4j" % "slf4j-api" % "1.7.32",
+    "org.slf4j" % "slf4j-api" % "2.0.9",
     "com.typesafe.akka" %% "akka-stream" % akkaV,
     "org.mongodb" % "mongodb-driver-legacy" % MongoJavaDriverVersion
   ),
@@ -85,11 +88,10 @@ val commonSettings = Seq(
     "Sonatype OSS Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots",
     Resolver.githubPackages("VegaFactor")
   ),
-  parallelExecution in Test := false,
-  testOptions in Test += Tests.Argument("-oDS"),
-  testOptions in Ci += Tests.Argument("-l", "org.scalatest.tags.Slow"),
-  fork in Test := false,
-//  publishTo := sonatypePublishTo.value,
+  Test / parallelExecution := false,
+  Test / testOptions += Tests.Argument("-oDS"),
+  Ci / testOptions += Tests.Argument("-l", "org.scalatest.tags.Slow"),
+  Test / fork := false,
   publishConfiguration := publishConfiguration.value.withOverwrite(true),
   publishLocalConfiguration := publishLocalConfiguration.value.withOverwrite(true),
   githubOwner       := "VegaFactor",
@@ -108,10 +110,10 @@ lazy val `akka-persistence-mongo-scala` = (project in file("scala"))
     libraryDependencies ++= Seq(
       "org.mongodb.scala" %% "mongo-scala-driver" % MongoJavaDriverVersion % "compile",
       "org.mongodb.scala" %% "mongo-scala-bson"   % MongoJavaDriverVersion % "compile",
-      "io.netty"          % "netty-buffer"        % "4.1.72.Final" % "compile",
-      "io.netty"          % "netty-transport"     % "4.1.72.Final" % "compile",
-      "io.netty"          % "netty-handler"       % "4.1.72.Final" % "compile",
-      "org.reactivestreams" % "reactive-streams"  % "1.0.3"
+      "io.netty"          % "netty-buffer"        % NettyVersion % "compile",
+      "io.netty"          % "netty-transport"     % NettyVersion % "compile",
+      "io.netty"          % "netty-handler"       % NettyVersion % "compile",
+      "org.reactivestreams" % "reactive-streams"  % "1.0.4"
     ),
     dependencyOverrides ++= Seq(
       "org.mongodb"       % "mongodb-driver-core" % MongoJavaDriverVersion % "compile"
@@ -140,7 +142,8 @@ lazy val `akka-persistence-mongo-tools` = (project in file("tools"))
   .settings(
     libraryDependencies ++= Seq(
       "org.mongodb.scala" %% "mongo-scala-driver" % MongoJavaDriverVersion % "compile"
-    )
+    ),
+    publish / skip := true,
   )
   .configs(Ci)
 
@@ -148,7 +151,7 @@ lazy val `akka-persistence-mongo` = (project in file("."))
   .aggregate(`akka-persistence-mongo-common`, `akka-persistence-mongo-rxmongo`, `akka-persistence-mongo-scala`, `akka-persistence-mongo-tools`)
   .settings(
     crossScalaVersions := Nil,
-    skip in publish := true,
+    publish / skip := true,
 //    publishTo := Some(Resolver.file("file", new File("target/unusedrepo"))),
     githubOwner       := "VegaFactor",
     githubRepository  := "akka-persistence-mongo",

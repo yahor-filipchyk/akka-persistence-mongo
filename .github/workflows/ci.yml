@@ -7,18 +7,18 @@ jobs:
       matrix:
         include:
           - mongo-version: 3.6
-            scala-version: 2.12.15
+            scala-version: 2.12.18
           - mongo-version: 3.6
-            scala-version: 2.13.7
+            scala-version: 2.13.12
             # 4.0 must be quoted, otherwise will be truncated to 4
           - mongo-version: "4.0"
-            scala-version: 2.12.15
+            scala-version: 2.12.18
           - mongo-version: "4.0"
-            scala-version: 2.13.7
+            scala-version: 2.13.12
           - mongo-version: 4.2
-            scala-version: 2.12.15
+            scala-version: 2.12.18
           - mongo-version: 4.2
-            scala-version: 2.13.7
+            scala-version: 2.13.12
     env:
       MONGODB_AUTH_PORT: 28117
       MONGODB_NOAUTH_PORT: 27117
@@ -28,12 +28,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
     - name: Setup JDK
-      uses: actions/setup-java@v2
+      uses: actions/setup-java@v3
       with:
         distribution: adopt
-        java-version: 8
+        java-version: 17
     - name: Coursier cache
       uses: coursier/cache-action@v6
     - name: Start mongod
