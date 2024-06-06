@@ -110,8 +110,8 @@ class ScalaDriverPersistenceJournaller(val driver: ScalaMongoDriver) extends Mon
           else {
             val filter = and(
               equal(PROCESSOR_ID, document.get(PROCESSOR_ID)),
-              gte(FROM, document.get(FROM)),
-              lte(TO, document.get(TO))
+              equal(FROM, document.get(FROM)),
+              equal(TO, document.get(TO))
             )
             val update = BsonDocument("$set" -> document)
             collection.flatMap(_.withWriteConcern(writeConcern).updateOne(filter, update, upsert)
