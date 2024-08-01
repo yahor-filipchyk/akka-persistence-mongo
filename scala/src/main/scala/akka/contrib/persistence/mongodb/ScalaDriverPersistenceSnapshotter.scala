@@ -123,7 +123,7 @@ class ScalaDriverPersistenceSnapshotter(driver: ScalaMongoDriver) extends MongoP
     }
   }
 
-  override def deleteMatchingSnapshots(pid: String, maxSeq: Long, maxTs: Long): Future[Unit] = {
+  override def deleteMatchingSnapshots(pid: String, minSeq: Long, maxSeq: Long, maxTs: Long): Future[Unit] = {
     val snaps = driver.getSnaps(pid)
     for {
       s0 <- snaps
@@ -131,6 +131,7 @@ class ScalaDriverPersistenceSnapshotter(driver: ScalaMongoDriver) extends MongoP
       wr <- s.deleteMany(
               and(
                 equal(PROCESSOR_ID, pid),
+                gte(SEQUENCE_NUMBER, minSeq),
                 lte(SEQUENCE_NUMBER, maxSeq),
                 lte(TIMESTAMP, maxTs)
               )

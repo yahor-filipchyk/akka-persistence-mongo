@@ -45,7 +45,7 @@ class MongoSnapshots(config: Config) extends SnapshotStore {
    * @param criteria selection criteria for deleting.
    */
   override def deleteAsync(persistenceId: String, criteria: SnapshotSelectionCriteria): Future[Unit] =
-    impl.deleteMatchingSnapshots(persistenceId, criteria.maxSequenceNr, criteria.maxTimestamp)
+    impl.deleteMatchingSnapshots(persistenceId, criteria.minSequenceNr, criteria.maxSequenceNr, criteria.maxTimestamp)
 
   /**
    * Plugin API
@@ -76,5 +76,5 @@ trait MongoPersistenceSnapshottingApi {
   
   def deleteSnapshot(pid: String, seq: Long, ts: Long): Future[Unit]
   
-  def deleteMatchingSnapshots(pid: String, maxSeq: Long, maxTs: Long): Future[Unit]
+  def deleteMatchingSnapshots(pid: String, minSeq: Long, maxSeq: Long, maxTs: Long): Future[Unit]
 }

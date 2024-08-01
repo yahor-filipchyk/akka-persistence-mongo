@@ -63,12 +63,13 @@ class RxMongoSnapshotter(driver: RxMongoDriver) extends MongoPersistenceSnapshot
     }
   }
 
-  override def deleteMatchingSnapshots(pid: String, maxSeq: Long, maxTs: Long): Future[Unit] = {
+  override def deleteMatchingSnapshots(pid: String, minSeq: Long, maxSeq: Long, maxTs: Long): Future[Unit] = {
     for {
       s <- snaps(pid)
       wr <- s.delete()
               .one(BSONDocument(
                 PROCESSOR_ID -> pid,
+                SEQUENCE_NUMBER -> BSONDocument("$gte" -> minSeq),
                 SEQUENCE_NUMBER -> BSONDocument("$lte" -> maxSeq),
                 TIMESTAMP -> BSONDocument("$lte" -> maxTs)
               ))
