@@ -45,11 +45,11 @@ case class ObjectIdSingleEventOffset(
       case cmp if cmp != 0 =>
         cmp
       case _ =>
-        hexStr compare that.hexStr match {
+        eventSeqN compare that.eventSeqN match {
           case cmp if cmp != 0 =>
             cmp
           case _ =>
-            eventSeqN compare that.eventSeqN
+            hexStr compare that.hexStr
         }
     }
   }
