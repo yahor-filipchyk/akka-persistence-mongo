@@ -1,5 +1,5 @@
 publish / skip := true
-val releaseV = "3.1.2-5"
+val releaseV = "3.1.2-6"
 
 val scala212V = "2.12.18"
 val scala213V = "2.13.12"
