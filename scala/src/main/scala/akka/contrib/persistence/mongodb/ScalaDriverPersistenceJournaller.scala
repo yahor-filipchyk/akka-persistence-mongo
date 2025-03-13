@@ -45,8 +45,8 @@ class ScalaDriverPersistenceJournaller(val driver: ScalaMongoDriver) extends Mon
   private[this] def journalRangeQuery(pid: String, from: Long, to: Long) =
     and(
       equal(PROCESSOR_ID, pid),
-      gte(TO, from),
-      lte(FROM, to)
+      lte(FROM, to),
+      gte(TO, from)
     )
 
   def journalRange(pid: String, from: Long, to: Long, max: Int): Source[Event, NotUsed] = {
